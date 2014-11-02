@@ -14,6 +14,8 @@ public class Main {
     private static final String MY_KEY = "7d02edc37983dbb3b0ed705b94bd77f34411fdbd";
     private static final String MY_APP_NAME = "Avifro notification app";
 
+    private static final String ROOT_HTTP_PATH = "https://api-beta.hive.im/api/";
+
     public static void main(String[] args) {
         ProwlClient prowlClient = new ProwlClient();
         ProwlEvent prowlEvent = new DefaultProwlEvent(
@@ -26,10 +28,10 @@ public class Main {
             e1.printStackTrace();
         }
 
-        HiveActions hiveActions = new HiveActions("https://api-beta.hive.im/api/");
+        HiveActions hiveActions = new HiveActions(ROOT_HTTP_PATH);
         String token = hiveActions.getMyToken();
-        List<MyTransfer> transfers = hiveActions.findTransfers();
-        
+        List<MyTransfer> transfers = hiveActions.findTransfers(token);
+
     }
 
 }
