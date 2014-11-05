@@ -9,27 +9,36 @@ import javax.ws.rs.client.*;
 import javax.ws.rs.core.Form;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 
 /**
  * Created by avifro on 11/1/14.
  */
-public class HiveActions {
+public class HiveActionsService {
 
-    private final static String CLIENT_TYPE_ATT= "Client-Type";
+    private final static String CLIENT_TYPE_ATT = "Client-Type";
     private final static String WEB_CLIENT_TYPE_VALUE = "WEB";
     private final static String BROWSER_CLIENT_TYPE_VALUE = "Browser";
 
-    private final static String CLIENT_VERSION_ATT= "Client-Version";
-    private final static String CLIENT_VERSION_VALUE= "0.1";
+    private final static String CLIENT_VERSION_ATT = "Client-Version";
+    private final static String CLIENT_VERSION_VALUE = "0.1";
 
-    private final static String AUTHORIZATION_ATT= "Authorization";
+    private final static String AUTHORIZATION_ATT = "Authorization";
+
+    private final static String EMAIL_KEY = "email";
+    private final static String PASSWORD_KEY = "password";
 
     private WebTarget rootTarget;
+    private Properties properties = new Properties();
 
-    public HiveActions(String rootUrl) {
+    public HiveActionsService(String rootUrl) {
         init(rootUrl);
     }
 
@@ -39,7 +48,12 @@ public class HiveActions {
         builder.sslContext(helper.getDefaultSSLContext());
         builder.hostnameVerifier(helper.getDefualtHostnameVerifier());
         Client client = builder.build();
-        rootTarget = client.target("https://api-beta.hive.im/api/");
+        try {
+            properties.load((getClass().getResourceAsStream("/settings.properties")));
+        } catch (IOException e) {
+            throw new RuntimeException("Couldn't read properties file");
+        }
+        rootTarget = client.target(rootUrl);
     }
 
     public String getMyToken() {
@@ -48,8 +62,8 @@ public class HiveActions {
         signInTarget.queryParam(CLIENT_VERSION_ATT, CLIENT_VERSION_VALUE);
 
         Form form = new Form();
-        form.param("email","avifro@gmail.com");
-        form.param("password", "bid.sat.ill-663");
+        form.param(EMAIL_KEY, properties.getProperty(EMAIL_KEY));
+        form.param(PASSWORD_KEY, properties.getProperty(PASSWORD_KEY));
 
 
         Invocation.Builder invocation = signInTarget.request(MediaType.APPLICATION_JSON);
