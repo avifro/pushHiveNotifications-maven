@@ -2,26 +2,22 @@ package avifro.com.Services;
 
 import avifro.com.ClientHelper;
 import avifro.com.Entities.MyTransfer;
-import com.google.gson.Gson;
+import com.jayway.jsonpath.JsonPath;
 import org.glassfish.jersey.client.JerseyClientBuilder;
 
 import javax.ws.rs.client.*;
 import javax.ws.rs.core.Form;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Properties;
 
 /**
  * Created by avifro on 11/1/14.
  */
-public class HiveActionsService {
+public class HiveActionsService implements CloudStorageProvider {
 
     private final static String CLIENT_TYPE_ATT = "Client-Type";
     private final static String WEB_CLIENT_TYPE_VALUE = "WEB";
@@ -56,37 +52,56 @@ public class HiveActionsService {
         rootTarget = client.target(rootUrl);
     }
 
-    public String getMyToken() {
+    @Override
+    public String getMyToken(String userName, String password) {
         WebTarget signInTarget = rootTarget.path("/user/sign-in/");
         signInTarget.queryParam(CLIENT_TYPE_ATT, WEB_CLIENT_TYPE_VALUE);
         signInTarget.queryParam(CLIENT_VERSION_ATT, CLIENT_VERSION_VALUE);
 
         Form form = new Form();
-        form.param(EMAIL_KEY, properties.getProperty(EMAIL_KEY));
-        form.param(PASSWORD_KEY, properties.getProperty(PASSWORD_KEY));
-
+        form.param(EMAIL_KEY, userName);
+        form.param(PASSWORD_KEY, password);
 
         Invocation.Builder invocation = signInTarget.request(MediaType.APPLICATION_JSON);
         Response response = invocation.post(Entity.entity(form, MediaType.APPLICATION_FORM_URLENCODED_TYPE));
         String data = response.readEntity(String.class);
-        Gson gson = new Gson();
-        Map jsonObject = (Map) gson.fromJson(data, Object.class);
-        return (String)((Map)jsonObject.get("data")).get("token");
+        return JsonPath.read(data, "$.data.token");
     }
 
-    public List<MyTransfer> findTransfers(String token) {
+    @Override
+    public List<MyTransfer> findMyTransfers(String token) {
         List<MyTransfer> myTransfers = new ArrayList<MyTransfer>();
-        WebTarget getTransferListTarget = rootTarget.path("/hive/get/");
-        Invocation.Builder invocation = getTransferListTarget.request(MediaType.APPLICATION_JSON);
-        invocation.header(CLIENT_TYPE_ATT, BROWSER_CLIENT_TYPE_VALUE);
-        invocation.header(CLIENT_VERSION_ATT, CLIENT_VERSION_VALUE);
-        invocation.header(AUTHORIZATION_ATT, token);
-
+        WebTarget getFirstLevelDirectoriesTarget = rootTarget.path("/hive/get/");
+        Invocation.Builder invocation = buildInvocation(getFirstLevelDirectoriesTarget, token);
         Response response = invocation.get();
-        String data = response.readEntity(String.class);
+        String responseContent = response.readEntity(String.class);
+        String transfersDirectoryId = extractTransfersDirectoryId(responseContent);
+
+        WebTarget getTransferListTarget = rootTarget.path("/hive/get-children/");
+        invocation = buildInvocation(getTransferListTarget, token);
+        Form form = new Form();
+        form.param("parentId", transfersDirectoryId);
+        form.param("filter", "folder");
+        form.param("order","dateModified");
+        form.param("sort", "desc");
+
+        response = invocation.post(Entity.entity(form, MediaType.APPLICATION_FORM_URLENCODED_TYPE));
+        responseContent = response.readEntity(String.class);
 
 
         return myTransfers;
+    }
+
+    private Invocation.Builder buildInvocation(WebTarget webTarget, String token) {
+        Invocation.Builder invocation = webTarget.request(MediaType.APPLICATION_JSON);
+        invocation.header(CLIENT_TYPE_ATT, BROWSER_CLIENT_TYPE_VALUE);
+        invocation.header(CLIENT_VERSION_ATT, CLIENT_VERSION_VALUE);
+        invocation.header(AUTHORIZATION_ATT, token);
+        return invocation;
+    }
+
+    private String extractTransfersDirectoryId(String firstLevelFoldersResponse) {
+        return JsonPath.read(firstLevelFoldersResponse, "$.data[?(@.type=='transfer')].id");
     }
 
 }
