@@ -5,23 +5,53 @@ package avifro.com.Entities;
  */
 public class MyTransfer {
 
-    private String name;
+    private String filename;
 
-    private long timeStarted;
+    private String dateCreated;
 
-    public String getName() {
-        return name;
+    private String extension;
+
+    private int size;
+
+    private String status;
+
+    public String getFilename() {
+        return filename;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public void setFilename(String filename) {
+        this.filename = filename;
     }
 
-    public long getTimeStarted() {
-        return timeStarted;
+    public String getDateCreated() {
+        return dateCreated;
     }
 
-    public void setTimeStarted(long timeStarted) {
-        this.timeStarted = timeStarted;
+    public void setDateCreated(String dateCreated) {
+        this.dateCreated = dateCreated;
+    }
+
+    public String getExtension() {
+        return extension;
+    }
+
+    public void setExtension(String extension) {
+        this.extension = extension;
+    }
+
+    public int getSize() {
+        return size;
+    }
+
+    public void setSize(int size) {
+        this.size = size;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
     }
 }

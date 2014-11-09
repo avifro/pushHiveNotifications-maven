@@ -3,6 +3,10 @@ package avifro.com.Services;
 import avifro.com.ClientHelper;
 import avifro.com.Entities.MyTransfer;
 import com.jayway.jsonpath.JsonPath;
+import net.minidev.json.JSONArray;
+import org.codehaus.jackson.map.DeserializationConfig;
+import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.map.type.TypeFactory;
 import org.glassfish.jersey.client.JerseyClientBuilder;
 
 import javax.ws.rs.client.*;
@@ -33,12 +37,15 @@ public class HiveActionsService implements CloudStorageProvider {
 
     private WebTarget rootTarget;
     private Properties properties = new Properties();
+    private ObjectMapper mapper = new ObjectMapper();
 
     public HiveActionsService(String rootUrl) {
         init(rootUrl);
     }
 
     private void init(String rootUrl) {
+        mapper.configure(DeserializationConfig.Feature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
         ClientHelper helper = new ClientHelper();
         ClientBuilder builder = new JerseyClientBuilder();
         builder.sslContext(helper.getDefaultSSLContext());
@@ -81,14 +88,18 @@ public class HiveActionsService implements CloudStorageProvider {
         invocation = buildInvocation(getTransferListTarget, token);
         Form form = new Form();
         form.param("parentId", transfersDirectoryId);
-        form.param("filter", "folder");
+        form.param("offset", "0");
         form.param("order","dateModified");
         form.param("sort", "desc");
 
         response = invocation.post(Entity.entity(form, MediaType.APPLICATION_FORM_URLENCODED_TYPE));
         responseContent = response.readEntity(String.class);
-
-
+        JSONArray jsonArray = JsonPath.read(responseContent, "$.data");
+        try {
+            myTransfers = mapper.readValue(jsonArray.toJSONString(), TypeFactory.collectionType(List.class, MyTransfer.class));
+        } catch (IOException e) {
+            throw new RuntimeException("Transfers JSON object couldn't be mapped! ", e);
+        }
         return myTransfers;
     }
 
@@ -101,7 +112,8 @@ public class HiveActionsService implements CloudStorageProvider {
     }
 
     private String extractTransfersDirectoryId(String firstLevelFoldersResponse) {
-        return JsonPath.read(firstLevelFoldersResponse, "$.data[?(@.type=='transfer')].id");
+        JSONArray result = JsonPath.read(firstLevelFoldersResponse, "$.data[?(@.type=='transfer')].id");
+        return (String)result.get(0);
     }
 
 }

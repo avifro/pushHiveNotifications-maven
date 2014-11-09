@@ -52,11 +52,16 @@ public class NotificationsPusherApp {
         if (prowlActionsService == null) {
             prowlActionsService = new ProwlActionsService(myAppName, myNotificationServiceKey);
         }
-
-        List<MyTransfer> transfers = cloudStorageProvider.findMyTransfers(token);
+        List<MyTransfer> transfers;
+        try {
+            transfers = cloudStorageProvider.findMyTransfers(token);
+        } catch (Exception e) {
+            prowlActionsService.sendNotification("Notification Push app has been terminated because of an error", e.getMessage());
+            throw new RuntimeException(e);
+        }
         if (transfers.size() > 0) {
             for (MyTransfer transfer : transfers) {
-                prowlActionsService.sendNotification("Download started!", transfer.getName());
+                prowlActionsService.sendNotification("Download started!", transfer.getTitle());
             }
         }
     }

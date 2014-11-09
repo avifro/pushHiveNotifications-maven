@@ -14,8 +14,8 @@ public class Main {
         NotificationsPusherApp app = NotificationsPusherApp.getInstance();
         String token = app.signIn(CloudStorageProviderEnum.HIVE, ROOT_HTTP_PATH);
         while (true) {
-            app.startApp(token, MY_NOTIFICATION_SERVICE_KEY, MY_APP_NAME);
             try {
+                app.startApp(token, MY_NOTIFICATION_SERVICE_KEY, MY_APP_NAME);
                 Thread.sleep(10000);
             } catch (InterruptedException e) {
                 //Do nothing
