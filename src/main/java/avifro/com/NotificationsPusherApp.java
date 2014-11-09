@@ -5,8 +5,11 @@ import avifro.com.Entities.MyTransfer;
 import avifro.com.Services.CloudStorageProvider;
 import avifro.com.Services.HiveActionsService;
 import avifro.com.Services.ProwlActionsService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
@@ -15,12 +18,17 @@ import java.util.Properties;
  */
 public class NotificationsPusherApp {
 
+    private Logger logger = LoggerFactory.getLogger(getClass());
+
     private final static String USERNAME_KEY = "userName";
     private final static String PASSWORD_KEY = "password";
 
     private static NotificationsPusherApp instance = new NotificationsPusherApp();
     private CloudStorageProvider cloudStorageProvider;
     private ProwlActionsService prowlActionsService;
+
+    // TODO Temp solution : needs to be stored in DB instead
+    private List<MyTransfer> myActiveTransfers = new ArrayList<>();
 
     private NotificationsPusherApp() {}
 
@@ -56,12 +64,32 @@ public class NotificationsPusherApp {
         try {
             transfers = cloudStorageProvider.findMyTransfers(token);
         } catch (Exception e) {
-            prowlActionsService.sendNotification("Notification Push app has been terminated because of an error", e.getMessage());
+            prowlActionsService.sendNotification("Notifications Push app has been terminated because of an error", e.getMessage());
             throw new RuntimeException(e);
         }
-        if (transfers.size() > 0) {
-            for (MyTransfer transfer : transfers) {
-                prowlActionsService.sendNotification("Download started!", transfer.getTitle());
+
+        pushNotifications(transfers);
+    }
+
+    private void pushNotifications(List<MyTransfer> myTransfers) {
+        if (myTransfers.size() > 0) {
+            for (MyTransfer myTransfer : myTransfers) {
+                switch (myTransfer.getStatus()) {
+                    case "Pending" :
+                    case "Downloading" :
+                        if (!myActiveTransfers.contains(myTransfer)) {
+                            logger.info(myTransfer.getFilename() +  " - new download has been started");
+                            // TODO needs to be modified once it's moved to DB
+                            myActiveTransfers.add(myTransfer);
+                            prowlActionsService.sendNotification("New Download has been started", myTransfer.getFilename());
+                        }
+                        break;
+                    case "Complete" :
+                        logger.info(myTransfer.getFilename() +  " - download has been finished");
+                        // TODO needs to be modified once it's moved to DB
+                        myActiveTransfers.remove(myTransfer);
+                        prowlActionsService.sendNotification("Download finished", myTransfer.getFilename());
+                }
             }
         }
     }

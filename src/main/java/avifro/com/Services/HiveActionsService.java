@@ -77,23 +77,12 @@ public class HiveActionsService implements CloudStorageProvider {
 
     @Override
     public List<MyTransfer> findMyTransfers(String token) {
-        List<MyTransfer> myTransfers = new ArrayList<MyTransfer>();
-        WebTarget getFirstLevelDirectoriesTarget = rootTarget.path("/hive/get/");
-        Invocation.Builder invocation = buildInvocation(getFirstLevelDirectoriesTarget, token);
+        List<MyTransfer> myTransfers;
+        WebTarget getTransferListTarget = rootTarget.path("/transfer/list/");
+        Invocation.Builder invocation = buildInvocation(getTransferListTarget, token);
         Response response = invocation.get();
         String responseContent = response.readEntity(String.class);
-        String transfersDirectoryId = extractTransfersDirectoryId(responseContent);
 
-        WebTarget getTransferListTarget = rootTarget.path("/hive/get-children/");
-        invocation = buildInvocation(getTransferListTarget, token);
-        Form form = new Form();
-        form.param("parentId", transfersDirectoryId);
-        form.param("offset", "0");
-        form.param("order","dateModified");
-        form.param("sort", "desc");
-
-        response = invocation.post(Entity.entity(form, MediaType.APPLICATION_FORM_URLENCODED_TYPE));
-        responseContent = response.readEntity(String.class);
         JSONArray jsonArray = JsonPath.read(responseContent, "$.data");
         try {
             myTransfers = mapper.readValue(jsonArray.toJSONString(), TypeFactory.collectionType(List.class, MyTransfer.class));
@@ -109,11 +98,6 @@ public class HiveActionsService implements CloudStorageProvider {
         invocation.header(CLIENT_VERSION_ATT, CLIENT_VERSION_VALUE);
         invocation.header(AUTHORIZATION_ATT, token);
         return invocation;
-    }
-
-    private String extractTransfersDirectoryId(String firstLevelFoldersResponse) {
-        JSONArray result = JsonPath.read(firstLevelFoldersResponse, "$.data[?(@.type=='transfer')].id");
-        return (String)result.get(0);
     }
 
 }
