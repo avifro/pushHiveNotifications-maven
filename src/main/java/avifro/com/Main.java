@@ -1,6 +1,10 @@
 package avifro.com;
 
 import avifro.com.Entities.CloudStorageProviderEnum;
+import com.mongodb.DB;
+import com.mongodb.MongoClient;
+
+import java.net.UnknownHostException;
 
 public class Main {
 
@@ -11,18 +15,32 @@ public class Main {
 
 
     public static void main(String[] args) {
-        NotificationsPusherApp app = NotificationsPusherApp.getInstance();
+        NotificationsPusherApp app = initApp();
         String token = app.signIn(CloudStorageProviderEnum.HIVE, ROOT_HTTP_PATH);
         while (true) {
             try {
                 app.startApp(token, MY_NOTIFICATION_SERVICE_KEY, MY_APP_NAME);
-                Thread.sleep(120000);
+                Thread.sleep(3600000);
             } catch (InterruptedException e) {
                 //Do nothing
             }
         }
     }
 
-
+    private static NotificationsPusherApp initApp() {
+        final String DB_HOST_NAME = "localhost";
+        NotificationsPusherApp app = NotificationsPusherApp.getInstance();
+        try {
+            MongoClient mongoClient = new MongoClient(DB_HOST_NAME);
+            DB db = mongoClient.getDB("pushDownloadNotifications");
+            MyTransferDbHelper myTransferDbHelper = new MyTransferDbHelper();
+            myTransferDbHelper.setMongoDB(db);
+            myTransferDbHelper.createDownloadsCollection();
+            app.setMyTransferDbHelper(myTransferDbHelper);
+        } catch (UnknownHostException e) {
+            throw new RuntimeException("Couldn't connect to DB possibly because of unknown host: " + DB_HOST_NAME);
+        }
+        return app;
+    }
 
 }

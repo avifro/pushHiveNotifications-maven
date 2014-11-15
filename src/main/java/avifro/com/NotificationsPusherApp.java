@@ -5,6 +5,7 @@ import avifro.com.Entities.MyTransfer;
 import avifro.com.Services.CloudStorageProvider;
 import avifro.com.Services.HiveActionsService;
 import avifro.com.Services.ProwlActionsService;
+import org.apache.commons.lang3.Validate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,6 +27,7 @@ public class NotificationsPusherApp {
     private static NotificationsPusherApp instance = new NotificationsPusherApp();
     private CloudStorageProvider cloudStorageProvider;
     private ProwlActionsService prowlActionsService;
+    private MyTransferDbHelper myTransferDbHelper;
 
     // TODO Temp solution : needs to be stored in DB instead
     private List<MyTransfer> myActiveTransfers = new ArrayList<>();
@@ -34,6 +36,10 @@ public class NotificationsPusherApp {
 
     public static NotificationsPusherApp getInstance() {
         return instance;
+    }
+
+    public void setMyTransferDbHelper(MyTransferDbHelper myTransferDbHelper) {
+        this.myTransferDbHelper = myTransferDbHelper;
     }
 
     public String signIn(CloudStorageProviderEnum type, String rootHttpPath) {
@@ -56,10 +62,11 @@ public class NotificationsPusherApp {
     }
 
     public void startApp(String token, String myNotificationServiceKey, String myAppName) {
-
+        Validate.notBlank(token);
         if (prowlActionsService == null) {
             prowlActionsService = new ProwlActionsService(myAppName, myNotificationServiceKey);
         }
+
         List<MyTransfer> transfers;
         try {
             transfers = cloudStorageProvider.findMyTransfers(token);
@@ -86,6 +93,8 @@ public class NotificationsPusherApp {
                         break;
                     case "Complete" :
                         logger.info(myTransfer.getFilename() +  " - download has been finished");
+                        // persist information in db
+                        myTransferDbHelper.insertDoc(myTransfer);
                         // TODO needs to be modified once it's moved to DB
                         myActiveTransfers.remove(myTransfer);
                         prowlActionsService.sendNotification("Download finished", myTransfer.getFilename());
@@ -93,5 +102,6 @@ public class NotificationsPusherApp {
             }
         }
     }
+
 
 }
