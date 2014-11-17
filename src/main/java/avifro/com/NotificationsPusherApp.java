@@ -24,13 +24,14 @@ public class NotificationsPusherApp {
     private final static String USERNAME_KEY = "userName";
     private final static String PASSWORD_KEY = "password";
 
-    private static NotificationsPusherApp instance = new NotificationsPusherApp();
     private CloudStorageProvider cloudStorageProvider;
     private ProwlActionsService prowlActionsService;
     private MyTransferDbHelper myTransferDbHelper;
 
     // TODO Temp solution : needs to be stored in DB instead
     private List<MyTransfer> myActiveTransfers = new ArrayList<>();
+
+    private static NotificationsPusherApp instance = new NotificationsPusherApp();
 
     private NotificationsPusherApp() {}
 
