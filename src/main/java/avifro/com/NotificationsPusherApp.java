@@ -99,6 +99,7 @@ public class NotificationsPusherApp {
                         // TODO needs to be modified once it's moved to DB
                         myActiveTransfers.remove(myTransfer);
                         prowlActionsService.sendNotification("Download finished", myTransfer.getFilename());
+                        break;
                 }
             }
         }
