@@ -2,6 +2,7 @@ package avifro.com.Services;
 
 import avifro.com.ClientHelper;
 import avifro.com.Entities.MyTransfer;
+import avifro.com.PropertiesHandler;
 import com.jayway.jsonpath.JsonPath;
 import net.minidev.json.JSONArray;
 import org.codehaus.jackson.map.DeserializationConfig;
@@ -14,9 +15,7 @@ import javax.ws.rs.core.Form;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Properties;
 
 /**
  * Created by avifro on 11/1/14.
@@ -36,7 +35,6 @@ public class HiveActionsService implements CloudStorageProvider {
     private final static String PASSWORD_KEY = "password";
 
     private WebTarget rootTarget;
-    private Properties properties = new Properties();
     private ObjectMapper mapper = new ObjectMapper();
 
     public HiveActionsService(String rootUrl) {
@@ -51,11 +49,6 @@ public class HiveActionsService implements CloudStorageProvider {
         builder.sslContext(helper.getDefaultSSLContext());
         builder.hostnameVerifier(helper.getDefualtHostnameVerifier());
         Client client = builder.build();
-        try {
-            properties.load((getClass().getResourceAsStream("/settings.properties")));
-        } catch (IOException e) {
-            throw new RuntimeException("Couldn't read properties file");
-        }
         rootTarget = client.target(rootUrl);
     }
 

@@ -11,22 +11,20 @@ import com.mongodb.WriteResult;
  */
 public class MyTransferDbHelper {
 
-    public static final String DOWNLOADS_COLLECTION_DB = "downloads";
-
     private DB db;
 
     public void setMongoDB(DB db) {
         this.db = db;
     }
 
-    public void createDownloadsCollection() {
-        if (!db.collectionExists(DOWNLOADS_COLLECTION_DB)) {
-            db.createCollection(DOWNLOADS_COLLECTION_DB, null);
+    public void createCollection(String collectionName) {
+        if (db!= null && !db.collectionExists(collectionName)) {
+            db.createCollection(collectionName, null);
         }
     }
 
-    public WriteResult insertDoc(MyTransfer myTransfer) {
-        DBCollection coll = db.getCollection(DOWNLOADS_COLLECTION_DB);
+    public WriteResult insertDoc(String collectionName, MyTransfer myTransfer) {
+        DBCollection coll = db.getCollection(collectionName);
         BasicDBObject dbObject = new BasicDBObject("fileName", myTransfer.getFilename())
                 .append("dateCreated", myTransfer.getDateCreated())
                 .append("extension", myTransfer.getExtension())

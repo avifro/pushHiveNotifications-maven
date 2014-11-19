@@ -5,11 +5,14 @@ import avifro.com.Entities.MyTransfer;
 import avifro.com.Services.CloudStorageProvider;
 import avifro.com.Services.HiveActionsService;
 import avifro.com.Services.ProwlActionsService;
+import com.mongodb.DB;
+import com.mongodb.MongoClient;
 import org.apache.commons.lang3.Validate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
@@ -31,12 +34,33 @@ public class NotificationsPusherApp {
     // TODO Temp solution : needs to be stored in DB instead
     private List<MyTransfer> myActiveTransfers = new ArrayList<>();
 
-    private static NotificationsPusherApp instance = new NotificationsPusherApp();
+    private static NotificationsPusherApp app;
 
     private NotificationsPusherApp() {}
 
     public static NotificationsPusherApp getInstance() {
-        return instance;
+        if (app == null) {
+            app = new NotificationsPusherApp();
+            initApp();
+        }
+        return app;
+    }
+
+    private static void initApp() {
+        PropertiesHandler propertiesHandler = PropertiesHandler.getInstance();
+        NotificationsPusherApp app = NotificationsPusherApp.getInstance();
+        String dbHostName = propertiesHandler.getProperty("dbHost", "localhost");
+        int dbPort = Integer.valueOf(propertiesHandler.getProperty("dbPort", "27017"));
+        try {
+            MongoClient mongoClient = new MongoClient(dbHostName, dbPort);
+            DB db = mongoClient.getDB(propertiesHandler.getProperty("dbName", "pushDownloadNotifications"));
+            MyTransferDbHelper myTransferDbHelper = new MyTransferDbHelper();
+            myTransferDbHelper.setMongoDB(db);
+            myTransferDbHelper.createCollection(propertiesHandler.getProperty("dbCollection"));
+            app.setMyTransferDbHelper(myTransferDbHelper);
+        } catch (UnknownHostException e) {
+            throw new RuntimeException("Couldn't connect to DB possibly because of unknown host: " + dbHostName);
+        }
     }
 
     public void setMyTransferDbHelper(MyTransferDbHelper myTransferDbHelper) {
@@ -52,14 +76,8 @@ public class NotificationsPusherApp {
              // not supported yet
         }
 
-        Properties properties = new Properties();
-        try {
-            properties.load((getClass().getResourceAsStream("/settings.properties")));
-        } catch (IOException e) {
-            throw new RuntimeException("Couldn't read properties file");
-        }
-
-        return cloudStorageProvider.getMyToken(properties.getProperty(USERNAME_KEY), properties.getProperty(PASSWORD_KEY));
+        PropertiesHandler propertiesHandler = PropertiesHandler.getInstance();
+        return cloudStorageProvider.getMyToken(propertiesHandler.getProperty(USERNAME_KEY), propertiesHandler.getProperty(PASSWORD_KEY));
     }
 
     public void startApp(String token, String myNotificationServiceKey, String myAppName) {
@@ -81,6 +99,8 @@ public class NotificationsPusherApp {
 
     private void pushNotifications(List<MyTransfer> myTransfers) {
         if (myTransfers.size() > 0) {
+            PropertiesHandler propertiesHandler = PropertiesHandler.getInstance();
+            String collectionDbName = propertiesHandler.getProperty("dbCollection");
             for (MyTransfer myTransfer : myTransfers) {
                 switch (myTransfer.getStatus()) {
                     case "Pending" :
@@ -95,7 +115,7 @@ public class NotificationsPusherApp {
                     case "Complete" :
                         logger.info(myTransfer.getFilename() +  " - download has been finished");
                         // persist information in db
-                        myTransferDbHelper.insertDoc(myTransfer);
+                        myTransferDbHelper.insertDoc(collectionDbName, myTransfer);
                         // TODO needs to be modified once it's moved to DB
                         myActiveTransfers.remove(myTransfer);
                         prowlActionsService.sendNotification("Download finished", myTransfer.getFilename());
