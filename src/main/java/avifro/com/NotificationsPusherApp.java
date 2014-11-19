@@ -112,6 +112,7 @@ public class NotificationsPusherApp {
                             prowlActionsService.sendNotification("New Download has been started", myTransfer.getFilename());
                         }
                         break;
+                    case "Encoded" :
                     case "Complete" :
                         logger.info(myTransfer.getFilename() +  " - download has been finished");
                         // persist information in db
