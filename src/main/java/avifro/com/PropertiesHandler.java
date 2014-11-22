@@ -23,6 +23,7 @@ public class PropertiesHandler {
 
     private static void loadSystemProperties() {
         properties = System.getProperties();
+        System.out.println(properties.toString());
     }
 
     public String getProperty(String key) {
