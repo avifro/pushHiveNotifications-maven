@@ -48,8 +48,8 @@ public class NotificationsPusherApp {
         PropertiesHandler propertiesHandler = PropertiesHandler.getInstance();
         NotificationsPusherApp app = NotificationsPusherApp.getInstance();
         String dbHostName = propertiesHandler.getProperty("dbHost", "localhost");
-        System.out.println("Current DB host is " + dbHostName);
-        
+        System.out.println("Current DB host is: " + dbHostName);
+
         int dbPort = Integer.valueOf(propertiesHandler.getProperty("dbPort", "27017"));
         try {
             MongoClient mongoClient = new MongoClient(dbHostName, dbPort);
