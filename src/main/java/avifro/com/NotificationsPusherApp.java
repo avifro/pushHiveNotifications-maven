@@ -11,11 +11,9 @@ import org.apache.commons.lang3.Validate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Properties;
 
 /**
  * Created by avifro on 11/6/14.
@@ -50,6 +48,8 @@ public class NotificationsPusherApp {
         PropertiesHandler propertiesHandler = PropertiesHandler.getInstance();
         NotificationsPusherApp app = NotificationsPusherApp.getInstance();
         String dbHostName = propertiesHandler.getProperty("dbHost", "localhost");
+        System.out.println("Current DB host is " + dbHostName);
+        
         int dbPort = Integer.valueOf(propertiesHandler.getProperty("dbPort", "27017"));
         try {
             MongoClient mongoClient = new MongoClient(dbHostName, dbPort);

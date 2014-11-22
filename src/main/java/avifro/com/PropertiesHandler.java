@@ -16,9 +16,13 @@ public class PropertiesHandler {
     public static PropertiesHandler getInstance() {
         if (propertiesHandler == null) {
             propertiesHandler = new PropertiesHandler();
-            loadPropertiesFile();
+            loadSystemProperties();
         }
         return propertiesHandler;
+    }
+
+    private static void loadSystemProperties() {
+        properties = System.getProperties();
     }
 
     public String getProperty(String key) {
@@ -33,13 +37,13 @@ public class PropertiesHandler {
         return value;
     }
 
-    private static void loadPropertiesFile() {
-        properties = new Properties();
-        try {
-            System.out.println("Current working directory: " + PropertiesHandler.class.getClassLoader().getResource("").getPath());
-            properties.load(PropertiesHandler.class.getClassLoader().getResourceAsStream("./settings.properties"));
-        } catch (IOException e) {
-            throw new RuntimeException("Couldn't read properties file");
-        }
-    }
+//    private static void loadPropertiesFile() {
+//        properties = new Properties();
+//        try {
+//            System.out.println("Current working directory: " + PropertiesHandler.class.getClassLoader().getResource("").getPath());
+//            properties.load(PropertiesHandler.class.getClassLoader().getResourceAsStream("./settings.properties"));
+//        } catch (IOException e) {
+//            throw new RuntimeException("Couldn't read properties file");
+//        }
+//    }
 }
