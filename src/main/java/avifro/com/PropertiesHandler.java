@@ -7,6 +7,17 @@ import java.util.Properties;
  */
 public class PropertiesHandler {
 
+    public static final String DB_USER_NAME_KEY = "dbUserName";
+    public static final String DB_PASSWORD_KEY = "dbPassword";
+    public static final String DB_HOST_KEY = "dbHost";
+    public static final String DB_PORT_KEY = "dbPort";
+    public static final String DB_NAME_KEY = "dbName";
+    public static final String DB_COLLECTION_KEY = "dbCollection";
+    public static final String USER_NAME_KEY = "userName";
+    public static final String PASSWORD_KEY = "password";
+
+
+
     private static PropertiesHandler propertiesHandler;
     private static Properties properties;
 
@@ -15,19 +26,23 @@ public class PropertiesHandler {
     public static PropertiesHandler getInstance() {
         if (propertiesHandler == null) {
             propertiesHandler = new PropertiesHandler();
-            loadSystemEnvironment();
+            loadSystemEnvironmentVariables();
         }
         return propertiesHandler;
     }
 
-    private static void loadSystemEnvironment() {
+    private static void loadSystemEnvironmentVariables() {
         properties = new Properties();
-        properties.setProperty("dbHost", System.getenv("dbHost"));
-        properties.setProperty("dbPort", System.getenv("dbPort"));
-        properties.setProperty("dbName", System.getenv("dbName"));
-        properties.setProperty("dbCollection", System.getenv("dbCollection"));
-        properties.setProperty("userName", System.getenv("userName"));
-        properties.setProperty("password", System.getenv("password"));
+        if (System.getenv("isProduction") != null) {
+            properties.setProperty(DB_USER_NAME_KEY, System.getenv(DB_USER_NAME_KEY));
+            properties.setProperty(DB_PASSWORD_KEY, System.getenv(DB_PASSWORD_KEY));
+            properties.setProperty(DB_HOST_KEY, System.getenv(DB_HOST_KEY));
+            properties.setProperty(DB_PORT_KEY, System.getenv(DB_PORT_KEY));
+            properties.setProperty(DB_NAME_KEY, System.getenv(DB_NAME_KEY));
+            properties.setProperty(DB_COLLECTION_KEY, System.getenv(DB_COLLECTION_KEY));
+            properties.setProperty(USER_NAME_KEY, System.getenv(USER_NAME_KEY));
+            properties.setProperty(PASSWORD_KEY, System.getenv(PASSWORD_KEY));
+        }
     }
 
 

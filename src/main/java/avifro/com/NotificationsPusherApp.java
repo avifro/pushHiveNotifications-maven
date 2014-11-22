@@ -7,12 +7,15 @@ import avifro.com.Services.HiveActionsService;
 import avifro.com.Services.ProwlActionsService;
 import com.mongodb.DB;
 import com.mongodb.MongoClient;
+import com.mongodb.MongoCredential;
+import com.mongodb.ServerAddress;
 import org.apache.commons.lang3.Validate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -21,9 +24,6 @@ import java.util.List;
 public class NotificationsPusherApp {
 
     private Logger logger = LoggerFactory.getLogger(getClass());
-
-    private final static String USERNAME_KEY = "userName";
-    private final static String PASSWORD_KEY = "password";
 
     private CloudStorageProvider cloudStorageProvider;
     private ProwlActionsService prowlActionsService;
@@ -47,16 +47,20 @@ public class NotificationsPusherApp {
     private static void initApp() {
         PropertiesHandler propertiesHandler = PropertiesHandler.getInstance();
         NotificationsPusherApp app = NotificationsPusherApp.getInstance();
-        String dbHostName = propertiesHandler.getProperty("dbHost", "localhost");
+        String dbHostName = propertiesHandler.getProperty(PropertiesHandler.DB_HOST_KEY, "localhost");
         System.out.println("Current DB host is: " + dbHostName);
 
-        int dbPort = Integer.valueOf(propertiesHandler.getProperty("dbPort", "27017"));
+        int dbPort = Integer.valueOf(propertiesHandler.getProperty(PropertiesHandler.DB_PORT_KEY, "27017"));
         try {
-            MongoClient mongoClient = new MongoClient(dbHostName, dbPort);
-            DB db = mongoClient.getDB(propertiesHandler.getProperty("dbName", "pushDownloadNotifications"));
+            String dbName = propertiesHandler.getProperty(PropertiesHandler.DB_NAME_KEY, "pushDownloadNotifications");
+            MongoCredential credential = MongoCredential.createMongoCRCredential(propertiesHandler.getProperty(PropertiesHandler.DB_USER_NAME_KEY),
+                                                                                 dbName,
+                                                                                 propertiesHandler.getProperty(PropertiesHandler.DB_PASSWORD_KEY).toCharArray());
+            MongoClient mongoClient = new MongoClient(new ServerAddress(dbHostName, dbPort), Arrays.asList(credential));
+            DB db = mongoClient.getDB(dbName);
             MyTransferDbHelper myTransferDbHelper = new MyTransferDbHelper();
             myTransferDbHelper.setMongoDB(db);
-            myTransferDbHelper.createCollection(propertiesHandler.getProperty("dbCollection"));
+            myTransferDbHelper.createCollection(propertiesHandler.getProperty(PropertiesHandler.DB_COLLECTION_KEY));
             app.setMyTransferDbHelper(myTransferDbHelper);
         } catch (UnknownHostException e) {
             throw new RuntimeException("Couldn't connect to DB possibly because of unknown host: " + dbHostName);
@@ -77,7 +81,8 @@ public class NotificationsPusherApp {
         }
 
         PropertiesHandler propertiesHandler = PropertiesHandler.getInstance();
-        return cloudStorageProvider.getMyToken(propertiesHandler.getProperty(USERNAME_KEY), propertiesHandler.getProperty(PASSWORD_KEY));
+        return cloudStorageProvider.getMyToken(propertiesHandler.getProperty(PropertiesHandler.USER_NAME_KEY),
+                                               propertiesHandler.getProperty(PropertiesHandler.PASSWORD_KEY));
     }
 
     public void startApp(String token, String myNotificationServiceKey, String myAppName) {
