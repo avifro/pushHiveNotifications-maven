@@ -27,7 +27,7 @@ public class NotificationsPusherApp {
 
     private CloudStorageProvider cloudStorageProvider;
     private ProwlActionsService prowlActionsService;
-    private MyTransferDbHelper myTransferDbHelper;
+    private MyTransferRepository myTransferRepository;
 
     // TODO Temp solution : needs to be stored in DB instead
     private List<MyTransfer> myActiveTransfers = new ArrayList<>();
@@ -58,17 +58,17 @@ public class NotificationsPusherApp {
                                                                                  propertiesHandler.getProperty(PropertiesHandler.DB_PASSWORD_KEY).toCharArray());
             MongoClient mongoClient = new MongoClient(new ServerAddress(dbHostName, dbPort), Arrays.asList(credential));
             DB db = mongoClient.getDB(dbName);
-            MyTransferDbHelper myTransferDbHelper = new MyTransferDbHelper();
-            myTransferDbHelper.setMongoDB(db);
-            myTransferDbHelper.createCollection(propertiesHandler.getProperty(PropertiesHandler.DB_COLLECTION_KEY));
-            app.setMyTransferDbHelper(myTransferDbHelper);
+            MyTransferRepository myTransferRepository = new MyTransferRepository();
+            myTransferRepository.setMongoDB(db);
+            myTransferRepository.createCollection(propertiesHandler.getProperty(PropertiesHandler.DB_COLLECTION_KEY));
+            app.setMyTransferRepository(myTransferRepository);
         } catch (UnknownHostException e) {
             throw new RuntimeException("Couldn't connect to DB possibly because of unknown host: " + dbHostName);
         }
     }
 
-    public void setMyTransferDbHelper(MyTransferDbHelper myTransferDbHelper) {
-        this.myTransferDbHelper = myTransferDbHelper;
+    public void setMyTransferRepository(MyTransferRepository myTransferRepository) {
+        this.myTransferRepository = myTransferRepository;
     }
 
     public String signIn(CloudStorageProviderEnum type, String rootHttpPath) {
@@ -110,7 +110,8 @@ public class NotificationsPusherApp {
                 switch (myTransfer.getStatus()) {
                     case "Pending" :
                     case "Downloading" :
-                        if (!myActiveTransfers.contains(myTransfer)) {
+                        if (!myActiveTransfers.contains(myTransfer) &&
+                            !myTransferRepository.exists(collectionDbName, myTransfer.getFilename())) {
                             logger.info(myTransfer.getFilename() +  " - new download has been started");
                             // TODO needs to be modified once it's moved to DB
                             myActiveTransfers.add(myTransfer);
@@ -121,7 +122,7 @@ public class NotificationsPusherApp {
                     case "Complete" :
                         logger.info(myTransfer.getFilename() +  " - download has been finished");
                         // persist information in db
-                        myTransferDbHelper.insertDoc(collectionDbName, myTransfer);
+                        myTransferRepository.insertDoc(collectionDbName, myTransfer);
                         // TODO needs to be modified once it's moved to DB
                         myActiveTransfers.remove(myTransfer);
                         prowlActionsService.sendNotification("Download finished", myTransfer.getFilename());

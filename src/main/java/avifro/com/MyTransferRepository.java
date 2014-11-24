@@ -1,15 +1,12 @@
 package avifro.com;
 
 import avifro.com.Entities.MyTransfer;
-import com.mongodb.BasicDBObject;
-import com.mongodb.DB;
-import com.mongodb.DBCollection;
-import com.mongodb.WriteResult;
+import com.mongodb.*;
 
 /**
  * Created by avifro on 11/15/14.
  */
-public class MyTransferDbHelper {
+public class MyTransferRepository {
 
     private DB db;
 
@@ -21,6 +18,13 @@ public class MyTransferDbHelper {
         if (db!= null && !db.collectionExists(collectionName)) {
             db.createCollection(collectionName, null);
         }
+    }
+
+    public boolean exists(String collectionName, String fileName) {
+        DBCollection coll = db.getCollection(collectionName);
+        DBObject dbObject = new BasicDBObject("fileName", fileName);
+        return coll.find(dbObject).count() > 0;
+
     }
 
     public WriteResult insertDoc(String collectionName, MyTransfer myTransfer) {

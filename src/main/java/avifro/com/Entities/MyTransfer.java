@@ -1,5 +1,7 @@
 package avifro.com.Entities;
 
+import org.apache.commons.lang3.builder.EqualsBuilder;
+
 /**
  * Created by avifro on 11/1/14.
  */
@@ -53,5 +55,16 @@ public class MyTransfer {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (!(obj instanceof MyTransfer)) {
+            return false;
+        }
+        MyTransfer that = (MyTransfer) obj;
+        return new EqualsBuilder().append(this.filename, that.filename)
+                                  .append(this.extension, that.extension)
+                                  .append(this.getSize(), that.getSize()).isEquals();
     }
 }
