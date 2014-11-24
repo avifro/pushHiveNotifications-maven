@@ -113,19 +113,19 @@ public class NotificationsPusherApp {
                         if (!myActiveTransfers.contains(myTransfer) &&
                             !myTransferRepository.exists(collectionDbName, myTransfer.getFilename())) {
                             logger.info(myTransfer.getFilename() +  " - new download has been started");
-                            // TODO needs to be modified once it's moved to DB
                             myActiveTransfers.add(myTransfer);
                             prowlActionsService.sendNotification("New Download has been started", myTransfer.getFilename());
                         }
                         break;
                     case "Encoded" :
                     case "Complete" :
-                        logger.info(myTransfer.getFilename() +  " - download has been finished");
-                        // persist information in db
-                        myTransferRepository.insertDoc(collectionDbName, myTransfer);
-                        // TODO needs to be modified once it's moved to DB
+                        if (!myTransferRepository.exists(collectionDbName, myTransfer.getFilename())) {
+                            logger.info(myTransfer.getFilename() +  " - download has been finished");
+                            // persist information in db
+                            myTransferRepository.insertDoc(collectionDbName, myTransfer);
+                            prowlActionsService.sendNotification("Download finished", myTransfer.getFilename());
+                        }
                         myActiveTransfers.remove(myTransfer);
-                        prowlActionsService.sendNotification("Download finished", myTransfer.getFilename());
                         break;
                 }
             }
