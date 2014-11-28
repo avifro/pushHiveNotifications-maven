@@ -17,7 +17,7 @@ public class Main {
             try {
                 System.out.println("Checking for new\\finished downloads...");
                 app.startApp(token, MY_NOTIFICATION_SERVICE_KEY, MY_APP_NAME);
-                Thread.sleep(900000);
+                Thread.sleep(1350000);
             } catch (InterruptedException e) {
                 //Do nothing
             }

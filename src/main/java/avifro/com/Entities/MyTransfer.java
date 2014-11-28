@@ -13,7 +13,7 @@ public class MyTransfer {
 
     private String extension;
 
-    private int size;
+    private long size;
 
     private String status;
 
@@ -41,11 +41,11 @@ public class MyTransfer {
         this.extension = extension;
     }
 
-    public int getSize() {
+    public long getSize() {
         return size;
     }
 
-    public void setSize(int size) {
+    public void setSize(long size) {
         this.size = size;
     }
 
