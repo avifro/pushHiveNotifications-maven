@@ -31,6 +31,7 @@ public class NotificationsPusherApp {
 
     // TODO Temp solution : needs to be stored in DB instead
     private List<MyTransfer> myActiveTransfers = new ArrayList<>();
+    private long videoFolderId;
 
     private static NotificationsPusherApp app;
 
@@ -91,6 +92,10 @@ public class NotificationsPusherApp {
             prowlActionsService = new ProwlActionsService(myAppName, myNotificationServiceKey);
         }
 
+        if (videoFolderId == 0) {
+            videoFolderId = cloudStorageProvider.findVideoFolderId(token);
+        }
+
         List<MyTransfer> transfers;
         try {
             transfers = cloudStorageProvider.findMyTransfers(token);
@@ -99,10 +104,12 @@ public class NotificationsPusherApp {
             throw new RuntimeException(e);
         }
 
-        pushNotifications(transfers);
+        List<MyTransfer> completedTransfers = pushNotifications(transfers);
+        moveToVideoFolder(completedTransfers, token);
     }
 
-    private void pushNotifications(List<MyTransfer> myTransfers) {
+    private List<MyTransfer> pushNotifications(List<MyTransfer> myTransfers) {
+        List<MyTransfer> myCompletedTransfers = new ArrayList<>();
         if (myTransfers.size() > 0) {
             PropertiesHandler propertiesHandler = PropertiesHandler.getInstance();
             String collectionDbName = propertiesHandler.getProperty("dbCollection");
@@ -126,9 +133,17 @@ public class NotificationsPusherApp {
                             prowlActionsService.sendNotification("Download finished", myTransfer.getFilename());
                         }
                         myActiveTransfers.remove(myTransfer);
+                        myCompletedTransfers.add(myTransfer);
                         break;
                 }
             }
+        }
+        return myCompletedTransfers;
+    }
+
+    private void moveToVideoFolder(List<MyTransfer> myCompletedTransfers, String token) {
+        for (MyTransfer myTransfer : myCompletedTransfers) {
+            cloudStorageProvider.moveToVideoFolder(myTransfer.getStorageProviderId(), videoFolderId, token);
         }
     }
 

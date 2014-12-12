@@ -11,5 +11,7 @@ public interface CloudStorageProvider {
 
     String getMyToken(String userName, String password);
     List<MyTransfer> findMyTransfers(String token);
+    long findVideoFolderId(String token);
+    void moveToVideoFolder(long videoId, long videoFolderId, String token);
 
 }

@@ -1,11 +1,15 @@
 package avifro.com.Entities;
 
 import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.codehaus.jackson.annotate.JsonProperty;
 
 /**
  * Created by avifro on 11/1/14.
  */
 public class MyTransfer {
+
+    @JsonProperty(value = "id")
+    private long storageProviderId;
 
     private String filename;
 
@@ -16,6 +20,14 @@ public class MyTransfer {
     private long size;
 
     private String status;
+
+    public long getStorageProviderId() {
+        return storageProviderId;
+    }
+
+    public void setStorageProviderId(long storageProviderId) {
+        this.storageProviderId = storageProviderId;
+    }
 
     public String getFilename() {
         return filename;
