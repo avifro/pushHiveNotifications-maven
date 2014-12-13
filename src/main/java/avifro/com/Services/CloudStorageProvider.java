@@ -1,5 +1,6 @@
 package avifro.com.Services;
 
+import avifro.com.Entities.MyFile;
 import avifro.com.Entities.MyTransfer;
 
 import java.util.List;
@@ -10,8 +11,9 @@ import java.util.List;
 public interface CloudStorageProvider {
 
     String getMyToken(String userName, String password);
+    List<MyFile> findFilesByFolderId(long transferFolderId, String token);
     List<MyTransfer> findMyTransfers(String token);
-    long findVideoFolderId(String token);
-    void moveToVideoFolder(long videoId, long videoFolderId, String token);
+    long findFolderIdByType(String token, String type);
+    void moveFolderContentToAnotherFolder(long sourceFolderId, long destinationFolderId, String token);
 
 }

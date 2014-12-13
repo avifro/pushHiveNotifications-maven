@@ -32,6 +32,7 @@ public class NotificationsPusherApp {
     // TODO Temp solution : needs to be stored in DB instead
     private List<MyTransfer> myActiveTransfers = new ArrayList<>();
     private long videoFolderId;
+    private long transferFolderId;
 
     private static NotificationsPusherApp app;
 
@@ -93,7 +94,10 @@ public class NotificationsPusherApp {
         }
 
         if (videoFolderId == 0) {
-            videoFolderId = cloudStorageProvider.findVideoFolderId(token);
+            videoFolderId = cloudStorageProvider.findFolderIdByType(token, "video");
+        }
+        if (transferFolderId == 0) {
+            transferFolderId = cloudStorageProvider.findFolderIdByType(token, "transfer");
         }
 
         List<MyTransfer> transfers;
@@ -104,12 +108,11 @@ public class NotificationsPusherApp {
             throw new RuntimeException(e);
         }
 
-        List<MyTransfer> completedTransfers = pushNotifications(transfers);
-        moveToVideoFolder(completedTransfers, token);
+        pushNotifications(transfers);
+        cloudStorageProvider.moveFolderContentToAnotherFolder(transferFolderId, videoFolderId, token);
     }
 
-    private List<MyTransfer> pushNotifications(List<MyTransfer> myTransfers) {
-        List<MyTransfer> myCompletedTransfers = new ArrayList<>();
+    private void pushNotifications(List<MyTransfer> myTransfers) {
         if (myTransfers.size() > 0) {
             PropertiesHandler propertiesHandler = PropertiesHandler.getInstance();
             String collectionDbName = propertiesHandler.getProperty("dbCollection");
@@ -133,19 +136,10 @@ public class NotificationsPusherApp {
                             prowlActionsService.sendNotification("Download finished", myTransfer.getFilename());
                         }
                         myActiveTransfers.remove(myTransfer);
-                        myCompletedTransfers.add(myTransfer);
                         break;
                 }
             }
         }
-        return myCompletedTransfers;
     }
-
-    private void moveToVideoFolder(List<MyTransfer> myCompletedTransfers, String token) {
-        for (MyTransfer myTransfer : myCompletedTransfers) {
-            cloudStorageProvider.moveToVideoFolder(myTransfer.getStorageProviderId(), videoFolderId, token);
-        }
-    }
-
 
 }

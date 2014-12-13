@@ -1,6 +1,7 @@
 package avifro.com.Services;
 
 import avifro.com.ClientHelper;
+import avifro.com.Entities.MyFile;
 import avifro.com.Entities.MyTransfer;
 import com.jayway.jsonpath.JsonPath;
 import net.minidev.json.JSONArray;
@@ -38,6 +39,7 @@ public class HiveActionsService implements CloudStorageProvider {
     private final static String EMAIL_KEY = "email";
     private final static String PASSWORD_KEY = "password";
 
+    private final static String FOLDER_ID_KEY = "parentId";
     private final static String VIDEO_FOLDER_ID_KEY = "parent";
     private final static String VIDEO_ID_KEY = "hiveId";
 
@@ -76,6 +78,27 @@ public class HiveActionsService implements CloudStorageProvider {
     }
 
     @Override
+    public List<MyFile> findFilesByFolderId(long folderId, String token) {
+        List<MyFile> myFiles;
+        WebTarget getTransferListTarget = rootTarget.path("/hive/get-children/");
+        Invocation.Builder invocation = buildInvocation(getTransferListTarget, token);
+
+        Form form = new Form();
+        form.param(FOLDER_ID_KEY, String.valueOf(folderId));
+
+        Response response = invocation.post(Entity.entity(form, MediaType.APPLICATION_FORM_URLENCODED_TYPE));
+        String responseContent = response.readEntity(String.class);
+
+        JSONArray jsonArray = JsonPath.read(responseContent, "$.data");
+        try {
+            myFiles = mapper.readValue(jsonArray.toJSONString(), TypeFactory.collectionType(List.class, MyFile.class));
+        } catch (IOException e) {
+            throw new RuntimeException("Transfers JSON object couldn't be mapped! ", e);
+        }
+        return myFiles;
+    }
+
+    @Override
     public List<MyTransfer> findMyTransfers(String token) {
         List<MyTransfer> myTransfers;
         WebTarget getTransferListTarget = rootTarget.path("/transfer/list/");
@@ -93,28 +116,32 @@ public class HiveActionsService implements CloudStorageProvider {
     }
 
     @Override
-    public long findVideoFolderId(String token) {
+    public long findFolderIdByType(String token, String type) {
         WebTarget getTransferListTarget = rootTarget.path("/hive/get/");
         Invocation.Builder invocation = buildInvocation(getTransferListTarget, token);
         Response response = invocation.get();
         String responseContent = response.readEntity(String.class);
-        String videoFolderId = (String)((JSONArray)JsonPath.read(responseContent, "$.data[?(@.type=='video')].id")).get(0);
+        String videoFolderId = (String)((JSONArray)JsonPath.read(responseContent, "$.data[?(@.type=='" + type + "')].id")).get(0);
         return Long.valueOf(videoFolderId);
     }
 
     @Override
-    public void moveToVideoFolder(long videoId, long videoFolderId, String token) {
+    public void moveFolderContentToAnotherFolder(long sourceFolderId, long destinationFolderId, String token) {
         WebTarget moveToTarget = rootTarget.path("hive/move/");
         Invocation.Builder invocation = buildInvocation(moveToTarget, token);
 
-        Form form = new Form();
-        form.param(VIDEO_ID_KEY, String.valueOf(videoId));
-        form.param(VIDEO_FOLDER_ID_KEY, String.valueOf(videoFolderId));
+        List<MyFile> completedTransfers = findFilesByFolderId(sourceFolderId, token);
 
-        Response response = invocation.post(Entity.entity(form, MediaType.APPLICATION_FORM_URLENCODED_TYPE));
-        String data = response.readEntity(String.class);
-        if (!JsonPath.read(data, "$.status").equals("success")) {
-            logger.warn("Couldn't move movie with id " + videoFolderId + " to videos folder");
+        for (MyFile myFile : completedTransfers) {
+            Form form = new Form();
+            form.param(VIDEO_ID_KEY, String.valueOf(myFile.getStorageProviderId()));
+            form.param(VIDEO_FOLDER_ID_KEY, String.valueOf(destinationFolderId));
+
+            Response response = invocation.post(Entity.entity(form, MediaType.APPLICATION_FORM_URLENCODED_TYPE));
+            String data = response.readEntity(String.class);
+            if (!JsonPath.read(data, "$.status").equals("success")) {
+                logger.warn("Couldn't move movie with id " + destinationFolderId + " to videos folder");
+            }
         }
     }
 
