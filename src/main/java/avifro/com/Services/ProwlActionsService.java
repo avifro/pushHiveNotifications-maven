@@ -8,7 +8,7 @@ import net.sourceforge.prowl.exception.ProwlException;
 /**
  * Created by avifro on 11/5/14.
  */
-public class ProwlActionsService {
+public class ProwlActionsService implements NotificationActionsService {
 
     private final String appName;
     private final String apiKey;
@@ -18,9 +18,10 @@ public class ProwlActionsService {
         this.apiKey = apiKey;
     }
 
+    @Override
     public void sendNotification(String event, String description) {
         ProwlClient prowlClient = new ProwlClient();
-        ProwlEvent prowlEvent = new DefaultProwlEvent( apiKey, appName, event, description, 0);
+        ProwlEvent prowlEvent = new DefaultProwlEvent(apiKey, appName, event, description, 0);
         try {
             String message = prowlClient.pushEvent(prowlEvent);
             System.out.println(message);

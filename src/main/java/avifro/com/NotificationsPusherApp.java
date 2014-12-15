@@ -2,9 +2,7 @@ package avifro.com;
 
 import avifro.com.Entities.CloudStorageProviderEnum;
 import avifro.com.Entities.MyTransfer;
-import avifro.com.Services.CloudStorageProvider;
-import avifro.com.Services.HiveActionsService;
-import avifro.com.Services.ProwlActionsService;
+import avifro.com.Services.*;
 import com.mongodb.DB;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoCredential;
@@ -25,8 +23,9 @@ public class NotificationsPusherApp {
 
     private Logger logger = LoggerFactory.getLogger(getClass());
 
+    private PropertiesHandler propertiesHandler;
     private CloudStorageProvider cloudStorageProvider;
-    private ProwlActionsService prowlActionsService;
+    private List<NotificationActionsService> notificationSenders;
     private MyTransferRepository myTransferRepository;
 
     // TODO Temp solution : needs to be stored in DB instead
@@ -41,14 +40,16 @@ public class NotificationsPusherApp {
     public static NotificationsPusherApp getInstance() {
         if (app == null) {
             app = new NotificationsPusherApp();
-            initApp();
+            app.initApp();
         }
         return app;
     }
 
-    private static void initApp() {
-        PropertiesHandler propertiesHandler = PropertiesHandler.getInstance();
+    private void initApp() {
+        propertiesHandler = PropertiesHandler.getInstance();
         NotificationsPusherApp app = NotificationsPusherApp.getInstance();
+
+        // Setting up DB settings
         String dbHostName = propertiesHandler.getProperty(PropertiesHandler.DB_HOST_KEY, "localhost");
         System.out.println("Current DB host is: " + dbHostName);
 
@@ -67,6 +68,20 @@ public class NotificationsPusherApp {
         } catch (UnknownHostException e) {
             throw new RuntimeException("Couldn't connect to DB possibly because of unknown host: " + dbHostName);
         }
+
+        initNotificationSendersList();
+    }
+
+    // Setting up notification actions services
+    private void initNotificationSendersList() {
+        //TODO needs to do it dynamically
+        notificationSenders = new ArrayList<>(2);
+        NotificationActionsService prowlActionsService = new ProwlActionsService(propertiesHandler.getProperty(PropertiesHandler.MY_APP_NAME_KEY),
+                                                                                 propertiesHandler.getProperty(PropertiesHandler.PROWL_API_KEY));
+        NotificationActionsService emailNotificationActionsService = new EmailActionsService(propertiesHandler.getProperty(PropertiesHandler.USER_NAME_KEY),
+                                                                                             propertiesHandler.getProperty(PropertiesHandler.PASSWORD_KEY));
+        notificationSenders.add(prowlActionsService);
+        notificationSenders.add(emailNotificationActionsService);
     }
 
     public void setMyTransferRepository(MyTransferRepository myTransferRepository) {
@@ -87,11 +102,8 @@ public class NotificationsPusherApp {
                                                propertiesHandler.getProperty(PropertiesHandler.PASSWORD_KEY));
     }
 
-    public void startApp(String token, String myNotificationServiceKey, String myAppName) {
+    public void startApp(String token) {
         Validate.notBlank(token);
-        if (prowlActionsService == null) {
-            prowlActionsService = new ProwlActionsService(myAppName, myNotificationServiceKey);
-        }
 
         if (videoFolderId == 0) {
             videoFolderId = cloudStorageProvider.findFolderIdByType(token, "video");
@@ -104,7 +116,7 @@ public class NotificationsPusherApp {
         try {
             transfers = cloudStorageProvider.findMyTransfers(token);
         } catch (Exception e) {
-            prowlActionsService.sendNotification("Notifications Push app has been terminated because of an error", e.getMessage());
+            notificationSenders.forEach((n) -> n.sendNotification("Notifications Push app has been terminated because of an error", e.getMessage()));
             throw new RuntimeException(e);
         }
 
@@ -124,7 +136,7 @@ public class NotificationsPusherApp {
                             !myTransferRepository.exists(collectionDbName, myTransfer.getFilename())) {
                             logger.info(myTransfer.getFilename() +  " - new download has been started");
                             myActiveTransfers.add(myTransfer);
-                            prowlActionsService.sendNotification("New Download has been started", myTransfer.getFilename());
+                            notificationSenders.forEach((n) -> n.sendNotification("New Download has been started", myTransfer.getFilename()));
                         }
                         break;
                     case "Encoded" :
@@ -133,7 +145,7 @@ public class NotificationsPusherApp {
                             logger.info(myTransfer.getFilename() +  " - download has been finished");
                             // persist information in db
                             myTransferRepository.insertDoc(collectionDbName, myTransfer);
-                            prowlActionsService.sendNotification("Download finished", myTransfer.getFilename());
+                            notificationSenders.forEach((n) -> n.sendNotification("Download is finished", myTransfer.getFilename()));
                         }
                         myActiveTransfers.remove(myTransfer);
                         break;
