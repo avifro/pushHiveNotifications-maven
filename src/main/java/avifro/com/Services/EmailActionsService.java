@@ -33,17 +33,16 @@ public class EmailActionsService implements NotificationActionsService {
         List<String> recipients = new ArrayList<>();
         recipients.add("avifro@gmail.com");
 
-        for (String recipient : recipients) {
-            try {
-                email.setFrom("notificationCenter@forelich.com");
-                email.setSubject("TestMail");
-                email.setMsg("This is a test mail ... :-)");
+        try {
+            for (String recipient : recipients) {
                 email.addTo(recipient);
-                email.send();
-            } catch (EmailException e) {
-                throw new RuntimeException("Couldn't send email notification to " + recipient, e);
             }
+            email.setFrom("avifro@gmail.com");
+            email.setSubject("TestMail");
+            email.setMsg("This is a test mail ... :-)");
+            email.send();
+        } catch (EmailException e) {
+            throw new RuntimeException("Couldn't send email notification", e);
         }
-
     }
 }

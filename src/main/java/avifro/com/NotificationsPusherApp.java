@@ -134,7 +134,7 @@ public class NotificationsPusherApp {
                     case "Downloading" :
                         if (!myActiveTransfers.contains(myTransfer) &&
                             !myTransferRepository.exists(collectionDbName, myTransfer.getFilename())) {
-                            logger.info(myTransfer.getFilename() +  " - new download has been started");
+                            logger.info(myTransfer.getFilename() + " - new download has been started");
                             myActiveTransfers.add(myTransfer);
                             notificationSenders.forEach((n) -> n.sendNotification("New Download has been started", myTransfer.getFilename()));
                         }

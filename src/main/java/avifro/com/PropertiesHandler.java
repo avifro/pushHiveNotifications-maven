@@ -17,6 +17,7 @@ public class PropertiesHandler {
     public static final String PASSWORD_KEY = "password";
     public static final String MY_APP_NAME_KEY = "myAppName";
     public static final String PROWL_API_KEY = "myNotificationServiceKey";
+    public static final String EMAIL_PASSWORD_KEY = "myNotificationServiceSenderPassword";
 
 
     private static PropertiesHandler propertiesHandler;
@@ -45,6 +46,7 @@ public class PropertiesHandler {
             properties.setProperty(PASSWORD_KEY, System.getenv(PASSWORD_KEY));
             properties.setProperty(MY_APP_NAME_KEY, System.getenv(MY_APP_NAME_KEY));
             properties.setProperty(PROWL_API_KEY, System.getenv(PROWL_API_KEY));
+            properties.setProperty(EMAIL_PASSWORD_KEY, System.getenv(EMAIL_PASSWORD_KEY));
         }
     }
 
